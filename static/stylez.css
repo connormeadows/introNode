@@ -23,7 +23,8 @@ h1 {
 p, td {
     font-size: 1em;
     color: #DCD0C0;
-    padding: .5em;
+    padding-top: 1em;
+    padding-right: 1em;
 }
 
 table {
@@ -49,4 +50,9 @@ input[type=submit] {
 
 .righty {
     text-align: right;
+}
+
+a, a:active, a[tabindex]:focus {
+    color: #C0B283;
+    text-decoration: none;
 }

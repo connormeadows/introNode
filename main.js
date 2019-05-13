@@ -17,13 +17,16 @@ app.use(express.static(path.join(__dirname, 'static')));
 app.post('/createAccount.html', urlencodedParser, function(req, res) {
   var html = '<head><title>Success!</title></head>' + styling +
              '<body><div id="bulk"><h1>Account Created!</h1>' +
-             '<p>Your account has been successfully created.</p></div></body>';
+             '<p>Your account has been successfully created.</p></div></body>' +
+             '<form method=\"get\" action=\"http://localhost:3000\">' +
+             '<input type=\"submit\" value=\"Return to Login\"></form>';
   res.send(html);
 });
 
 app.post('*', urlencodedParser, function(req, res){
     var html = '<head><title>Success!</title></head>' + styling +
-             '<body><div id="bulk"><h1>Login Successful</h1>' +
+             '<body><div id="banner"></div>' +
+             '<div id="bulk"><h1>Login Successful</h1>' +
              '<p>Welcome to my website.<br>I am working on implementing a login</p></div></body>';
     res.send(html);
 });
