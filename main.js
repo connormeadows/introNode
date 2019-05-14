@@ -2,7 +2,25 @@ var path = require('path');
 var express = require('express');
 var logger = require('morgan');
 var bodyParser = require('body-parser');
+var multer = require('multer');
+var upload = multer();
 var urlencodedParser = bodyParser.urlencoded({ extended: false });
+var mongoose = require('mongoose');
+mongoose.connect('mongodb:localhost/my_db');
+const RateLimit = require('express-rate-limit');
+
+const limiter = new RateLimit({
+  windowMs: 15*60*1000,
+  max: 100,
+  delayMs: 0
+});
+
+var userSchema = mongoose.Schema({
+  name: String,
+  email: String,
+  password: String
+});
+var User = mongoose.model("User", userSchema);
 
 var styling = '<link rel=\"stylesheet\" type=\"text/css" href=\"stylez.css\">'
 
@@ -10,22 +28,49 @@ var app = express();
 
 app.use(logger('dev'));
 
+app.use(limiter);
+
 app.use(urlencodedParser);
+
+app.use(bodyParser.json());
+
+app.use(bodyParser.urlencoded({ extended: true })); 
+
+app.use(upload.array());
 
 app.use(express.static(path.join(__dirname, 'static')));
 
 app.post('/createAccount.html', urlencodedParser, function(req, res) {
+  var userinfo = req.body;
+  if(!userInfo.name || !userInfo.email || !userInfo.password){
+    res.render('show_message', {
+       message: "Sorry, you provided wrong info", type: "error"});
+ } else {
+    var newUser = new User({
+       name: userInfo.name,
+       email: userInfo.email,
+       password: userInfo.password
+    });
+ }
+    newUser.save(function(err, User){
+       if(err)
+          res.render('show_message', {message: "Database error", type: "error"});
+       else
+          res.render('show_message', {
+             message: "New user added", type: "success", user: userInfo});
+    });
   var html = '<head><title>Success!</title></head>' + styling +
              '<body><div id="bulk"><h1>Account Created!</h1>' +
              '<p>Your account has been successfully created.</p></div></body>' +
              '<form method=\"get\" action=\"http://localhost:3000\">' +
              '<input type=\"submit\" value=\"Return to Login\"></form>';
+  console.log(req.body);
   res.send(html);
 });
 
 app.post('*', urlencodedParser, function(req, res){
     var html = '<head><title>Success!</title></head>' + styling +
-             '<body><div id="banner"></div>' +
+             '<body><div id="banner"><a href=\"http://localhost:3000\">Logout</a></div>' +
              '<div id="bulk"><h1>Login Successful</h1>' +
              '<p>Welcome to my website.<br>I am working on implementing a login</p></div></body>';
     res.send(html);
