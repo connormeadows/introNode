@@ -5,8 +5,8 @@ var bodyParser = require('body-parser');
 var multer = require('multer');
 var upload = multer();
 var urlencodedParser = bodyParser.urlencoded({ extended: false });
-var mongoose = require('mongoose');
-mongoose.connect('mongodb:localhost/my_db');
+mongoose = require('mongoose');
+mongoose.connect('mongodb://localhost:3000/my_db', {useNewUrlParser: true});
 const RateLimit = require('express-rate-limit');
 
 const limiter = new RateLimit({
@@ -26,6 +26,8 @@ var styling = '<link rel=\"stylesheet\" type=\"text/css" href=\"stylez.css\">'
 
 var app = express();
 
+var currentUser = '';
+
 app.use(logger('dev'));
 
 app.use(limiter);
@@ -41,7 +43,7 @@ app.use(upload.array());
 app.use(express.static(path.join(__dirname, 'static')));
 
 app.post('/createAccount.html', urlencodedParser, function(req, res) {
-  var userinfo = req.body;
+  var userInfo = req.body;
   if(!userInfo.name || !userInfo.email || !userInfo.password){
     res.render('show_message', {
        message: "Sorry, you provided wrong info", type: "error"});
@@ -69,6 +71,13 @@ app.post('/createAccount.html', urlencodedParser, function(req, res) {
 });
 
 app.post('*', urlencodedParser, function(req, res){
+    var loginAttempt = req.body;
+    console.log(loginAttempt.username + ' ' + loginAttempt.password);
+    User.findOne({name: loginAttempt.username, password: loginAttempt.password},
+            function(error, response){
+               currentUser = loginAttempt.username;
+               console.log(response + ' ' + currentUser);
+            });
     var html = '<head><title>Success!</title></head>' + styling +
              '<body><div id="banner"><a href=\"http://localhost:3000\">Logout</a></div>' +
              '<div id="bulk"><h1>Login Successful</h1>' +
@@ -82,9 +91,9 @@ app.get('*', function(req, res) {
              '<div id=\"bulk\"><h1>Welcome, Friend</h1>' +
              '<form method=\"post\"><table>' +
              '<tr><td class="righty">Username:&nbsp</td>' +
-             '<td><input type=\"text\" id=\"username\"></td></tr>' +
+             '<td><input type=\"text\" id=\"username\" name=\"username\"></td></tr>' +
              '<tr><td class="righty">Password:&nbsp</td>' +
-             '<td><input type=\"password\" id=\"password\"></td></tr>' +
+             '<td><input type=\"password\" id=\"password\" name=\"password\"></td></tr>' +
              '<tr><td colspan=\"2\" class=\"centery\"><input type=\"submit\"></td></tr></table></form></div></body>';
   res.send(html);
 });
