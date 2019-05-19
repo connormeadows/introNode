@@ -53,17 +53,18 @@ app.post('/createAccount.html', urlencodedParser, function(req, res) {
        email: userInfo.email,
        password: userInfo.password
     });
- }
     newUser.save(function(err, User){
-       if(err)
-          res.render('show_message', {message: "Database error", type: "error"});
-       else
-          res.render('show_message', {
-             message: "New user added", type: "success", user: userInfo});
-    });
+      if(err)
+         res.render('show_message', {message: "Database error", type: "error"});
+      else
+         res.render('show_message', {
+            message: "New user added", type: "success", user: userInfo});
+     });
+ } 
   var html = '<head><title>Success!</title></head>' + styling +
              '<body><div id="bulk"><h1>Account Created!</h1>' +
-             '<p>Your account has been successfully created.</p></div></body>' +
+             '<p>Your account has been successfully created.</p>' +
+             '<p>Welcome, ' + userInfo.name +'</p></div></body>' +
              '<form method=\"get\" action=\"http://localhost:3000\">' +
              '<input type=\"submit\" value=\"Return to Login\"></form>';
   console.log(req.body);
