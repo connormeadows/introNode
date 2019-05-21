@@ -5,16 +5,10 @@ var bodyParser = require('body-parser');
 var multer = require('multer');
 var upload = multer();
 var urlencodedParser = bodyParser.urlencoded({ extended: false });
-mongoose = require('mongoose');
-mongoose.connect('mongodb://localhost:3000/my_db', {useNewUrlParser: true});
-const RateLimit = require('express-rate-limit');
-
-const limiter = new RateLimit({
-  windowMs: 15*60*1000,
-  max: 100,
-  delayMs: 0
-});
-
+const mongoose = require('mongoose');
+mongoose.connect('mongodb://localhost:27017/my_db', {useNewUrlParser: true});
+var db = mongoose.connection;
+db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 var userSchema = mongoose.Schema({
   name: String,
   email: String,
@@ -22,43 +16,43 @@ var userSchema = mongoose.Schema({
 });
 var User = mongoose.model("User", userSchema);
 
-var styling = '<link rel=\"stylesheet\" type=\"text/css" href=\"stylez.css\">'
+const RateLimit = require('express-rate-limit');
+const limiter = new RateLimit({
+  windowMs: 15*60*1000,
+  max: 100,
+  delayMs: 0
+});
 
 var app = express();
 
 var currentUser = '';
+var styling = '<link rel=\"stylesheet\" type=\"text/css" href=\"stylez.css\">';
 
 app.use(logger('dev'));
-
 app.use(limiter);
-
 app.use(urlencodedParser);
-
 app.use(bodyParser.json());
-
 app.use(bodyParser.urlencoded({ extended: true })); 
-
 app.use(upload.array());
-
 app.use(express.static(path.join(__dirname, 'static')));
-
 app.post('/createAccount.html', urlencodedParser, function(req, res) {
   var userInfo = req.body;
   if(!userInfo.name || !userInfo.email || !userInfo.password){
     res.render('show_message', {
        message: "Sorry, you provided wrong info", type: "error"});
+ } else if(userInfo.password != userInfo.confirmPassword){
+    res.render('show_message', {
+      message: "Passwords do not match", type: "error"
+    });
  } else {
     var newUser = new User({
        name: userInfo.name,
        email: userInfo.email,
        password: userInfo.password
     });
-    newUser.save(function(err, User){
+    newUser.save(function(err){
       if(err)
-         res.render('show_message', {message: "Database error", type: "error"});
-      else
-         res.render('show_message', {
-            message: "New user added", type: "success", user: userInfo});
+         return handleError(err);
      });
  } 
   var html = '<head><title>Success!</title></head>' + styling +
@@ -73,17 +67,22 @@ app.post('/createAccount.html', urlencodedParser, function(req, res) {
 
 app.post('*', urlencodedParser, function(req, res){
     var loginAttempt = req.body;
-    console.log(loginAttempt.username + ' ' + loginAttempt.password);
-    User.findOne({name: loginAttempt.username, password: loginAttempt.password},
-            function(error, response){
-               currentUser = loginAttempt.username;
-               console.log(response + ' ' + currentUser);
-            });
-    var html = '<head><title>Success!</title></head>' + styling +
+    console.log(loginAttempt.username + ' ' + loginAttempt.password + ' ' +typeof loginAttempt.username);
+    var query  = User.where({name: loginAttempt.username, password: loginAttempt.password});
+    query.findOne(function (err, user) {
+      if (err) return handleError(err);
+      if (user) {
+        // doc may be null if no document matched
+        currentUser = loginAttempt.username;
+        console.log('In');
+        var html = '<head><title>Success!</title></head>' + styling +
              '<body><div id="banner"><a href=\"http://localhost:3000\">Logout</a></div>' +
              '<div id="bulk"><h1>Login Successful</h1>' +
              '<p>Welcome to my website.<br>I am working on implementing a login</p></div></body>';
-    res.send(html);
+        console.log(currentUser);
+        res.send(html);
+  }
+    });
 });
 
 app.get('*', function(req, res) {
